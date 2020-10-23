@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "start": "node ./dist/puppeteer-entry.js"
+    "start": "node ./dist"
   },
   "dependencies": {
     "@types/request-promise-native": "^1.0.17",
