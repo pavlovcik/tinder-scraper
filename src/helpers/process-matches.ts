@@ -2,21 +2,22 @@ import puppeteer from "puppeteer";
 import { TinderProfile } from "./@types/tinder";
 import { waitAndClick } from "./wait-and-click";
 
-const database = [] as any[];
-
 const state = {
-	matchesPerMatchGroup: 9, // default, based on Tinder UI chunks
+	matchesToProcess: 9, // default, based on Tinder UI chunks
+	storage: [] as any[],
 };
 
 export async function processMatches(page: puppeteer.Page, amount?: number) {
 	if (amount) {
-		state.matchesPerMatchGroup = amount;
+		state.matchesToProcess = amount;
 	}
 
-	// remove likes-you fake match from match per group counter
-	page // this makes sure to subtract one from the first group in case we plan to delete groups (of nine matches per)
+	// remove "likes-you" match from match per group counter
+	// this makes sure to subtract one from the first group
+	// in case we plan to delete groups (of nine matches per)
+	page
 		.waitForSelector(`a[href="/app/likes-you"]`)
-		.then(() => --state.matchesPerMatchGroup)
+		.then(() => --state.matchesToProcess)
 		.catch((e) => {});
 
 	// ATTACH PAGE HANDLERS
@@ -28,17 +29,19 @@ export async function processMatches(page: puppeteer.Page, amount?: number) {
 		}
 	});
 
-	// START CHAIN REACTION
+	// START THE CHAIN REACTION
 	await waitAndClick(`a[href*="/app/messages/"]`, page);
 }
 
 async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page) {
 	// PROMISFY ME
 	console.log(`requestfinished: `, request.url());
-	const userID = await processSingle(request, database);
+	const profile = await parseFromNetworkRequest(request);
+	state.storage.push(profile);
+	const userID = profile._id;
 	console.log({ state });
 
-	if (--state.matchesPerMatchGroup > 0) {
+	if (--state.matchesToProcess > 0) {
 		// theres still more matches in the group
 		await page.evaluate((id) => {
 			const match = document.querySelector(`a[href*="${id}"]`) as any;
@@ -47,9 +50,12 @@ async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page
 			nextMatch.click();
 		}, userID);
 	} else {
+		// THIS WOULD BE PROMISE RESOLVE
+
 		// theres no more matches in the group
 		// console.log(JSON.stringify(database, null, "  "));
-		console.log(database);
+		console.log(state.storage);
+		state.storage = [];
 		// return await page.evaluate((id) => {
 		// const match = document.querySelector(`a[href*="#scraped"]`) as any;
 		// match.parentElement.parentElement.removeChild(match.parentElement); // remove match group!
@@ -59,13 +65,14 @@ async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page
 	}
 }
 
-async function processSingle(request: puppeteer.Request, storage: unknown[]) {
-	const noQueryURL = request.url().split("?").shift() as string;
-	const userID = noQueryURL.split("/").pop() as string;
-	const USER = (await request.response()?.json()) as {
+async function parseFromNetworkRequest(request: puppeteer.Request): Promise<TinderProfile> {
+	// const noQueryURL = request.url().split("?").shift() as string;
+	// const userID = noQueryURL.split("/").pop() as string;
+	const { results } = (await request.response()?.json()) as {
 		status: number;
 		results: TinderProfile;
 	};
-	storage.push(USER.results);
-	return userID;
+	return results;
+	// storage.push(USER.results);
+	// return userID;
 }

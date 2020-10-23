@@ -14,10 +14,10 @@ process.on("unhandledRejection", console.error);
 	await facebookLogin(page);
 	await tinderLogin(page);
 
-	await processMatches(page, 2).catch(async (e) => {
+	await processMatches(page).catch(async (e) => {
 		// in case its not cached settings, must handle here.
 		await tinderMandetoryPrefs(page);
-		await processMatches(page, 2);
+		await processMatches(page);
 	});
 })();
 
