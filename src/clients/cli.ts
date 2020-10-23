@@ -1,3 +1,4 @@
+import { TinderProfile } from "../helpers/@types/tinder";
 import { main } from "../puppeteer-entry";
 interface IPC {
 	export: TinderProfile[];
