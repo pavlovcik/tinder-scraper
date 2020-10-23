@@ -27,7 +27,6 @@ export async function cli() {
 			ipc = await main(amount);
 		}
 
-		console.log({ ipc });
-		console.log(JSON.stringify(ipc.export, null, "\t"));
+		return ipc.export;
 	}
 }
