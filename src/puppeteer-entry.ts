@@ -19,11 +19,8 @@ export async function main(howMany?: number) {
 	try {
 		envelope.export = await processMatches(page, howMany);
 	} catch (e) {
-		// async (e) => {
-		// in case its not cached settings, must handle here.
 		await tinderMandetoryPrefs(page);
 		envelope.export = await processMatches(page, howMany);
-		// };
 	}
 	return envelope;
 }

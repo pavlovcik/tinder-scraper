@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "start": "node ./dist"
+    "start": "node ./dist 9"
   },
   "dependencies": {
     "@types/request-promise-native": "^1.0.17",

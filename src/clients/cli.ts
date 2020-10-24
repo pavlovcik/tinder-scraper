@@ -6,7 +6,7 @@ interface IPC {
 export async function cli() {
 	const arg = process.argv[2];
 
-	if (arg.includes("help")) {
+	if (arg?.includes("help")) {
 		console.log(`
 	TINDER SCRAPER
 

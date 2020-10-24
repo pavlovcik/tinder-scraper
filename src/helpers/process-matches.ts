@@ -13,12 +13,11 @@ export async function processMatches(page: puppeteer.Page, amount?: number): Pro
 			state.matchesToProcess = amount;
 		}
 
-		// remove "likes-you" match from match per group counter
-		// this makes sure to subtract one from the first group
-		// in case we plan to delete groups (of nine matches per)
 		page
+			// remove "likes-you" match from match per group counter
 			.waitForSelector(`a[href="/app/likes-you"]`)
-			.then(() => --state.matchesToProcess)
+			.then(() => --state.matchesToProcess) // this makes sure to subtract one from the first group
+			// in case we plan to delete groups (of nine matches per)
 			.catch((e) => {});
 
 		// ATTACH PAGE HANDLERS
@@ -29,7 +28,7 @@ export async function processMatches(page: puppeteer.Page, amount?: number): Pro
 		page.on("console", (message) => console.log(message.text()));
 		page.on("requestfinished", async (request) => {
 			if (request.url().includes("https://api.gotinder.com/user/")) {
-				return resolve(await userDataReceived(request, page)); // FIXME RESOLVE HERE OR PASS INSIDE ???
+				return resolve(await userDataReceived(request, page));
 			}
 		});
 
@@ -45,8 +44,6 @@ async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page
 		state.storage.push(profile);
 		const userID = profile._id;
 
-		// console.log({ state });
-
 		if (--state.matchesToProcess > 0) {
 			// theres still more matches in the group
 			await page.evaluate((id) => {
@@ -56,7 +53,6 @@ async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page
 				nextMatch.click();
 			}, userID);
 		} else {
-			// THIS WOULD BE PROMISE RESOLVE
 			return resolve(state.storage);
 
 			// theres no more matches in the group
