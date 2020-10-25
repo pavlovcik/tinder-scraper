@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "start": "node ./dist 9"
+    "start": "node ./dist 9",
+    "build": "npx tsc"
   },
   "dependencies": {
     "@types/request-promise-native": "^1.0.17",
