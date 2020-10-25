@@ -22,7 +22,7 @@ cp ./credentials.example.json ./credentials.json
 yarn install
 yarn build
 node ./dist all
-cat ./export.json
+# cat ./export.json # My 1100 matches were 2.5MB so you might wanna be careful with how you view it.
 ```
 # Setup Explainer
 Only supports login with Facebook.
