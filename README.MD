@@ -3,13 +3,13 @@
 ## Problem:
 + Tinder account since 2016 + a lot of traveling.
 	+ This meant that I had matches around the world with no means to sort them.
+	
+![MR WORLDWIDE](https://images-na.ssl-images-amazon.com/images/I/61WHhsyhStL._AC_SY355_.jpg)
+
+Some call ya boi mr 305
 
 ## Solution:
 + Export all matches to filter/view them in other software.
-
-![MR WORLDWIDE](https://images-na.ssl-images-amazon.com/images/I/61WHhsyhStL._AC_SY355_.jpg)
-
-some call ya boi mr 305
 
 # Setup Now
 ```bash
