@@ -22,6 +22,7 @@ cp ./credentials.example.json ./credentials.json
 yarn install
 yarn build
 node ./dist all
+cat ./export.json
 ```
 # Setup Explainer
 Only supports login with Facebook.
@@ -53,6 +54,8 @@ Tell the program how many you want to export. You can export all matches with th
 ```bash
 node ./dist all
 ```
+
+6. See your results at `./export.json`
 
 ### (Example) Export All Matches
 `node ./dist all`
