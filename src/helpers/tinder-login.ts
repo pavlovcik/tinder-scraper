@@ -23,7 +23,7 @@ export async function tinderLogin(page: puppeteer.Page) {
 	await waitAndClick(LOGIN, page);
 	await waitAndClick(LOGIN_WITH_FACEBOOK, page).catch(async () => await waitAndClick(LOGIN_WITH_FACEBOOK, page)); // try again
 	console.log("waiting to login to tinder...");
-	await page.waitForNavigation();
+	await page.waitForNavigation({ timeout: 5000 }).catch(async () => await waitAndClick(LOGIN_WITH_FACEBOOK, page)); // try again
 	console.log("logged into tinder!");
 
 	page.removeListener("error", nodeDetachedHandler);

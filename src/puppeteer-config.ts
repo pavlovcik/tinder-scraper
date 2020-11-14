@@ -10,10 +10,10 @@ let config = {
 	},
 	settings: {
 		devtools: false,
-		headless: false,
+		headless: true,
 		// userDataDir: `./cache`,
 		defaultViewport: null,
-		args: [] as any,
+		args: ["--lang=en-US,en;q=0.9"] as any,
 	},
 	credentials: require(path.join(process.cwd(), "./credentials.json")) as { email: string; password: string },
 };

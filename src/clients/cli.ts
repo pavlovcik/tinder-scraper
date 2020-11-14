@@ -1,4 +1,4 @@
-import { TinderProfile } from "../helpers/@types/tinder";
+import { FakeLocation, TinderProfile } from "../helpers/@types/tinder";
 import { main } from "../puppeteer-entry";
 interface IPC {
 	export: TinderProfile[];
@@ -17,14 +17,24 @@ export async function cli() {
 	} else {
 		let ipc: IPC;
 
+		const args = require("minimist")(process.argv.slice(2));
+
+		let location;
+		const latitude = args["latitude"] || args["lat"] || process.env["LATITUDE"];
+		const longitude = args["longitude"] || args["long"] || process.env["LONGITUDE"];
+		if (latitude && longitude) {
+			location = { latitude, longitude } as FakeLocation;
+		}
+
 		if (arg == "infinity" || arg == "all") {
-			ipc = await main(Infinity);
+			ipc = await main(Infinity, location);
 		} else {
 			let amount = parseInt(arg);
 			if (isNaN(amount)) {
 				throw new Error(`couldn't parse argument into amount to scrape`);
 			}
-			ipc = await main(amount);
+
+			ipc = await main(amount, location);
 		}
 
 		return ipc.export;

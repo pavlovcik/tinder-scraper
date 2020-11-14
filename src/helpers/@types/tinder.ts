@@ -5,7 +5,7 @@ export interface InstagramProfile {
 	media_count: number;
 	username: "Tinder";
 }
- interface InstagramProfilePhoto {
+interface InstagramProfilePhoto {
 	image: string;
 	thumbnail: string;
 	ts: string;
@@ -50,7 +50,7 @@ interface MatchPhotoProcessedFile {
 	width: number;
 }
 
-interface Interest {
+export interface Interest {
 	id: string;
 	name: string;
 }
@@ -85,4 +85,13 @@ interface Job {
 }
 interface Badge {
 	type: string;
+}
+
+export interface FakeLocation {
+	latitude: number;
+	longitude: number;
+}
+export interface TinderResponse {
+	status: number;
+	results: TinderProfile;
 }
