@@ -3,7 +3,10 @@
   "scripts": {
     "start": "node ./dist infinity",
     "start:gangnam": "node ./dist infinity --latitude 37.524415 --longitude 127.049327",
-    "build": "npx tsc"
+    "build:clean": "rm -rf ./dist",
+    "build:compile": "npx tsc",
+    "build:compile-watch": "npx tsc --watch",
+    "build": "npx run-s build:clean build:compile-watch"
   },
   "main": "dist/index.js",
   "dependencies": {

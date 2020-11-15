@@ -91,7 +91,11 @@ export interface FakeLocation {
 	latitude: number;
 	longitude: number;
 }
-export interface TinderResponse {
+export interface FetchApiResponse {
 	status: number;
 	results: TinderProfile;
+}
+
+export interface StateStorage {
+	[key: string]: TinderProfile;
 }

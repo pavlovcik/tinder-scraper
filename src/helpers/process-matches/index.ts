@@ -1,11 +1,11 @@
 import puppeteer from "puppeteer";
-import { FakeLocation, TinderProfile } from "../@types/tinder";
+import { FakeLocation, StateStorage, TinderProfile } from "../@types/tinder";
 import { waitAndClick } from "../wait-and-click";
-import { determineIfMessage, switchToMessagesView, userDataReceived } from "./process-matches-helpers";
+import { isItMessage, switchToMessagesView, userDataReceived } from "./process-matches-helpers";
 
 export const state = {
 	matchesToProcess: 9, // default, based on Tinder UI chunks
-	storage: [] as TinderProfile[],
+	storage: {} as StateStorage,
 	view: "matches" as "matches" | "messages",
 };
 
@@ -17,7 +17,11 @@ export async function processMatches(page: puppeteer.Page, amount?: number, loca
 		await page.setGeolocation(location);
 	}
 
-	return new Promise(async (resolve, reject) => {
+	return new Promise(processor(page));
+}
+
+function processor(page: puppeteer.Page): (resolve: (value?: TinderProfile[]) => void, reject: (reason?: any) => void) => void {
+	return async (resolve, reject) => {
 		page
 			// REMOVE "LIKES-YOU" MATCH FROM MATCH PER GROUP COUNTER
 			.waitForSelector(`a[href="/app/likes-you"]`)
@@ -25,16 +29,17 @@ export async function processMatches(page: puppeteer.Page, amount?: number, loca
 			// IN CASE WE PLAN TO DELETE GROUPS (OF NINE MATCHES PER)
 			.catch((e) => {});
 
-		// ATTACH PAGE HANDLERS
+		// ATTACH PAGE CONSOLE HANDLERS
 		page.on("error", errorHandler(reject));
 		page.on("console", (message) => console.log(message.text()));
+		// ATTACH PAGE REQUEST HANDLERS
 		await page.setRequestInterception(true);
 		page.on("request", requestHandler());
-		page.on("requestfinished", requestFinishedHandler(page, resolve));
-		page.on("requestfailed", requestFailedHandler(page, resolve));
+		page.on("requestfinished", requestFinishedHandler(page, resolve, reject));
+		page.on("requestfailed", requestFailedHandler(page, resolve, reject));
 		// START THE CHAIN REACTION
-		return await waitAndClick(`a[href*="/app/messages/"]`, page);
-	});
+		await waitAndClick(`a[href*="/app/messages/"]`, page);
+	};
 }
 
 function errorHandler(reject: (reason?: any) => void): (e: Error, ...args: any[]) => void {
@@ -45,56 +50,43 @@ function errorHandler(reject: (reason?: any) => void): (e: Error, ...args: any[]
 }
 
 function requestHandler(): (e: puppeteer.Request, ...args: any[]) => void {
-	return (request) => {
-		if (["image", "stylesheet", "font"].indexOf(request.resourceType()) !== -1) {
-			request.respond({
-				status: 200,
-			});
-			// request.abort();
-		} else {
+	return function blacklist(request) {
+		// | "document" | "stylesheet" | "image" | "media" | "font" | "script" | "texttrack" | "xhr" | "fetch" | "eventsource" | "websocket" | "manifest" | "other";
+		if (["document", "script", "xhr", "fetch", "websocket"].indexOf(request.resourceType()) !== -1) {
 			request.continue();
+		} else {
+			request.respond({ status: 200 });
 		}
 	};
 }
 
-function requestFinishedHandler(page: puppeteer.Page, resolve: (value: TinderProfile[]) => void): (e: puppeteer.Request, ...args: any[]) => void {
-	return async (request) => {
+function requestFinishedHandler(page: puppeteer.Page, resolve: Function, reject: Function): (e: puppeteer.Request, ...args: any[]) => void {
+	return async function requestFinished(request: puppeteer.Request) {
 		if (state.view === "matches") {
+			// THIS IS ONLY NEEDED TO CHECK IF WE PROCESSED ALL NON MESSAGE LINKS
 			const element = await page.waitForSelector(`a[href*="/app/messages/"]`);
-			const isMessage = await determineIfMessage(element);
-
+			const isMessage = await isItMessage(element);
 			if (isMessage) {
-				await switchToMessagesView(element, page);
+				await switchToMessagesView(state, page);
 			}
-
-			// await page.click(`a[href*="/app/messages/"]`); // handled in "resolve"
 		}
-
 		if (request.url().includes("https://api.gotinder.com/user/")) {
-			const userData = await userDataReceived(request, page);
-			return resolve(userData);
+			if (request.response()?.status() === 200) {
+				// must be 200 OK
+				try {
+					state.storage = await userDataReceived(request, page);		return resolve(state.storage); // exit loop and return to cli
+					// return resolve();
+				} catch (e) {
+					console.error(`caught error on userDataReceived(request, page)`, e);
+					// return reject(); // reject breaks the program cause its not caught in parent fn rn
+				}
+			}
 		}
+
 	};
 }
-function requestFailedHandler(page: puppeteer.Page, resolve: (value: TinderProfile[]) => void) {
-	// : (e: puppeteer.Request, ...args: any[]) => void
-	return async (request: puppeteer.Request) => {
-		if (request.url().includes("https://api.gotinder.com/user/")) {
-			console.warn(`> request failed handler...skipping`);
-			// 		const userData = await userDataReceived(request, page);
-			// 		return resolve(userData);
-		}
-		// console.log({ request });
-
-		// 	if (state.view === "matches") {
-		// 		const element = await page.waitForSelector(`a[href*="/app/messages/"]`);
-		// 		const isMessage = await determineIfMessage(element);
-
-		// 		if (isMessage) {
-		// 			await switchToMessagesView(element, page);
-		// 		}
-
-		// 		// await page.click(`a[href*="/app/messages/"]`); // handled in "resolve"
-		// 	}
+function requestFailedHandler(page: puppeteer.Page, resolve: { (value?: TinderProfile[] | undefined): void; (): void }, reject: (reason?: any) => void) {
+	return (request: puppeteer.Request) => {
+		console.error(`network issue e.g. DNS resolution failed, there's not network at all, network connection got interrupted etc.`);
 	};
 }

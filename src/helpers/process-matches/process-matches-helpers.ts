@@ -1,14 +1,15 @@
 import puppeteer from "puppeteer";
-import { TinderProfile, TinderResponse } from "../@types/tinder";
+import { FetchApiResponse } from "../@types/tinder";
 import { waitAndClick } from "../wait-and-click";
 import { state } from "./index";
+import { streamer } from "./stream-to-fs";
 
-export async function switchToMessagesView(element: puppeteer.ElementHandle<Element>, page: puppeteer.Page) {
+export async function switchToMessagesView(_state: typeof state, page: puppeteer.Page) {
 	await waitAndClick(`//*[@id="content"]/div/div[1]/div/aside/nav/div/div/div/div[1]/div/div[2]`, page); // open "messages" view
-	state.view = "messages";
+	_state.view = "messages";
 	console.log(`switched to "messages" view`);
 }
-export async function determineIfMessage(element: puppeteer.ElementHandle<Element>) {
+export async function isItMessage(element: puppeteer.ElementHandle<Element>) {
 	return await element.evaluate((e) => {
 		if (e.innerHTML.includes(`messageListItem__message`)) {
 			return true;
@@ -17,47 +18,47 @@ export async function determineIfMessage(element: puppeteer.ElementHandle<Elemen
 		}
 	});
 }
-export async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page): Promise<TinderProfile[]> {
-	return new Promise(async (resolve: (value: TinderProfile[]) => void) => {
+export async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page): Promise<typeof state.storage> {
+	return new Promise(userDataReceivedInner);
+
+	async function userDataReceivedInner(resolve: (value: typeof state.storage) => void, reject: Function) {
 		console.log(`userDataReceived: `, request.url(), request.response()?.status());
 
-		let profile;
-		let userID;
+		let userID: string;
 
-		if (request.response()?.status() !== 200) {
-			console.warn(`REQUEST NOT OK: `, request.url());
-			console.trace();
-			return;
-			// profile = response;
+		const parsed = await parseFromNetworkRequest(request).catch(function parseFailure(reason) {
+			console.trace({ reason });
+		});
+
+		if (parsed) {
+			const { results } = parsed;
+			state.storage[results._id] = results; //	save
+			streamer(`./stream.json`, state.storage[results._id]);
+			userID = results._id;
 		}
-		const response = await parseFromNetworkRequest(request);
-		// else {
-		profile = response.results;
-		state.storage.push(profile); //	save
-		userID = profile._id;
-		// }
 
 		await page.evaluate(scrollToBottoms);
 
 		if (--state.matchesToProcess > 0) {
 			// theres still more matches in the group
-			const doneScraping = await continueScraping(page, userID);
+			// @ts-ignore
+			const doneScraping = await checkIfDoneScraping(page, userID);
 			if (doneScraping) {
 				return resolve(state.storage);
 			}
 		} else {
 			return resolve(state.storage);
 		}
-	});
+	}
 }
 
-async function continueScraping(page: puppeteer.Page, userID?: string) {
+async function checkIfDoneScraping(page: puppeteer.Page, userID?: string) {
 	const success = await page.evaluate(innerPageScrape(), userID || false);
 
 	if (!success) {
 		console.log(`switching to "matches" view`);
 		await waitAndClick(`#match-tab`, page);
-		await page.evaluate(scrollToBottoms);
+		// await page.evaluate(scrollToBottoms);
 		try {
 			await waitAndClick(`a[href*="/app/messages/"]`, page);
 		} catch (e) {
@@ -86,31 +87,12 @@ async function continueScraping(page: puppeteer.Page, userID?: string) {
 	}
 }
 function scrollToBottoms() {
-	try {
-		const matchListNoMessages = document.getElementById(`matchListNoMessages`);
-		matchListNoMessages?.scrollBy(0, window.innerHeight);
-	} catch (e) {
-		console.error(e);
-	}
-	try {
-		const matchListWithMessages = document.getElementById(`matchListWithMessages`);
-		matchListWithMessages?.scrollBy(0, window.innerHeight);
-	} catch (e) {
-		console.error(e);
-	}
+	document.getElementById(`matchListNoMessages`)?.scrollBy(0, window.innerHeight);
+	document.getElementById(`matchListWithMessages`)?.scrollBy(0, window.innerHeight);
 }
 
-async function parseFromNetworkRequest(request: puppeteer.Request): Promise<TinderResponse> {
+async function parseFromNetworkRequest(request: puppeteer.Request): Promise<FetchApiResponse> {
 	const response = request.response() as puppeteer.Response;
-	return (await response.json()) as TinderResponse;
-	// try {
-	// 	const json = () as TinderResponse;
-	// 	console.log(json);
-	// 	return json;
-	// } catch (e) {
-	// 	const string = await response.text();
-	// 	console.log({ string });
-	// 	// @ts-ignore
-	// 	return { status: response.status(), results: string };
-	// }
+	const parsed = (await response.json()) as Promise<FetchApiResponse>;
+	return parsed;
 }
