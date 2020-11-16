@@ -9,6 +9,7 @@ export async function switchToMessagesView(_state: typeof state, page: puppeteer
 	_state.view = "messages";
 	console.log(`switched to "messages" view`);
 }
+
 export async function isItMessage(element: puppeteer.ElementHandle<Element>) {
 	return await element.evaluate((e) => {
 		if (e.innerHTML.includes(`messageListItem__message`)) {
@@ -21,12 +22,13 @@ export async function isItMessage(element: puppeteer.ElementHandle<Element>) {
 export async function userDataReceived(request: puppeteer.Request, page: puppeteer.Page): Promise<typeof state.storage> {
 	return new Promise(userDataReceivedInner);
 
-	async function userDataReceivedInner(resolve: (value: typeof state.storage) => void, reject: Function) {
+	async function userDataReceivedInner(resolve: (value: typeof state.storage) => void) {
 		console.log(`userDataReceived: `, request.url(), request.response()?.status());
 
 		let userID: string;
 
-		const parsed = await parseFromNetworkRequest(request).catch(function parseFailure(reason) {
+		const parsed = await parseFromNetworkRequest(request)
+		.catch(function parseFailure(reason) {
 			console.trace({ reason });
 		});
 

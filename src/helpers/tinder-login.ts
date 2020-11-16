@@ -17,7 +17,7 @@ export async function tinderLogin(page: puppeteer.Page) {
 		}
 	};
 
-	page.on("error", nodeDetachedHandler);
+	page.on("error", nodeDetachedHandler); // add
 
 	await waitAndClick(COOKIES, page).catch(() => console.log(`...allow cookies ok`));
 	await waitAndClick(LOGIN, page);
@@ -26,5 +26,5 @@ export async function tinderLogin(page: puppeteer.Page) {
 	await page.waitForNavigation({ timeout: 5000 }).catch(async () => await waitAndClick(LOGIN_WITH_FACEBOOK, page)); // try again
 	console.log("logged into tinder!");
 
-	page.removeListener("error", nodeDetachedHandler);
+	page.removeListener("error", nodeDetachedHandler); // remove
 }

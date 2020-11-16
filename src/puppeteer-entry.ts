@@ -1,28 +1,22 @@
 import pAll from "p-all";
 import puppeteer from "puppeteer";
 import "source-map-support/register";
-import { FakeLocation, TinderProfile } from "./helpers/@types/tinder";
+import { MockLocation, TinderProfile } from "./helpers/@types/tinder";
 import { browserSetup } from "./helpers/browser-setup";
 import { facebookLogin } from "./helpers/facebook-login";
-import { processMatches } from "./helpers/process-matches";
+import { tinderScraper } from "./helpers/process-matches";
 import { tinderLogin } from "./helpers/tinder-login";
 import { waitAndClick } from "./helpers/wait-and-click";
-process.on("unhandledRejection", console.error);
 
-export async function main(howMany?: number, location?: FakeLocation) {
+export async function main(howMany?: number, location?: MockLocation): Promise<{ export: TinderProfile[] }> {
 	const page: puppeteer.Page = await browserSetup();
 	await facebookLogin(page);
 	await tinderLogin(page);
-
-	const envelope = { export: [] } as { export: TinderProfile[] };
-
-	try {
-		envelope.export = await processMatches(page, howMany, location);
-	} catch (e) {
-		await tinderMandetoryPrefs(page);
-		envelope.export = await processMatches(page, howMany, location);
-	}
-	return envelope;
+	return {
+		export: await tinderScraper(page, howMany, location)
+			.catch(async () => await tinderMandetoryPrefs(page))
+			.finally(async () => await tinderScraper(page, howMany, location)),
+	} as { export: TinderProfile[] };
 }
 
 async function tinderMandetoryPrefs(page: puppeteer.Page) {

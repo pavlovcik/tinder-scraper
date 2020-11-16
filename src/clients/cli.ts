@@ -1,4 +1,4 @@
-import { FakeLocation, TinderProfile } from "../helpers/@types/tinder";
+import { MockLocation, TinderProfile } from "../helpers/@types/tinder";
 import { main } from "../puppeteer-entry";
 interface IPC {
 	export: TinderProfile[];
@@ -23,7 +23,7 @@ export async function cli() {
 		const latitude = args["latitude"] || args["lat"] || process.env["LATITUDE"];
 		const longitude = args["longitude"] || args["long"] || process.env["LONGITUDE"];
 		if (latitude && longitude) {
-			location = { latitude, longitude } as FakeLocation;
+			location = { latitude, longitude } as MockLocation;
 		}
 
 		if (arg == "infinity" || arg == "all") {

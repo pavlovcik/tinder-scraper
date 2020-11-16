@@ -87,7 +87,7 @@ interface Badge {
 	type: string;
 }
 
-export interface FakeLocation {
+export interface MockLocation {
 	latitude: number;
 	longitude: number;
 }

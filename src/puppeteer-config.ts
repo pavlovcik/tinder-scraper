@@ -9,7 +9,7 @@ let config = {
 		tinder: "https://tinder.com/",
 	},
 	settings: {
-		devtools: false,
+		devtools: true,
 		headless: true,
 		// userDataDir: `./cache`,
 		defaultViewport: null,
